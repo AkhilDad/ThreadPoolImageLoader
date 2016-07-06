@@ -2,6 +2,7 @@ package com.akhil.threadpoolimageloader;
 
 import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -20,6 +21,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements com.akhil.threadpoolimageloader.view.View {
 
+    private static final int VISIBLE_THRESHOLD = 3;
     private Presenter mPresenter;
 
     private ProgressDialog mProgressDialog;
@@ -32,6 +34,8 @@ public class MainActivity extends AppCompatActivity implements com.akhil.threadp
 
     private List<FlickrPhotoBean> mFlickrPhotoBeanList = new ArrayList<>();
     private PhotosAdapter mAdapter;
+    private RecyclerView.OnScrollListener mOnScrollListener;
+    private boolean mFetchingMore;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,9 +51,32 @@ public class MainActivity extends AppCompatActivity implements com.akhil.threadp
         mPhotosRV.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
         mAdapter = new PhotosAdapter(mFlickrPhotoBeanList, ImageLoader.getInstance(getApplicationContext()));
         mPhotosRV.setAdapter(mAdapter);
-        fetchPhotos();
+        mOnScrollListener = new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+            }
 
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                final LinearLayoutManager linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                int totalItemCount = linearLayoutManager.getItemCount();
+                int lastVisibleItem = linearLayoutManager.findLastVisibleItemPosition();
+                if (!mFetchingMore && totalItemCount <= (lastVisibleItem + VISIBLE_THRESHOLD)) {
+                    fetchNextPhotos();
+                }
+            }
+        };
+        mPhotosRV.addOnScrollListener(mOnScrollListener);
+        fetchPhotos();
         mRetryBtn.setOnClickListener(v -> fetchPhotos());
+    }
+
+    private void fetchNextPhotos() {
+        if (NetworkUtils.isNetworkConnected(getApplicationContext())) {
+            mPresenter.fetchNextPhotos();
+        }
     }
 
     private void fetchPhotos() {
@@ -60,12 +87,29 @@ public class MainActivity extends AppCompatActivity implements com.akhil.threadp
         }
     }
 
+    @Override
+    public void showFetchingMoreProgress(boolean show) {
+        mFetchingMore = show;
+        mAdapter.setIsFetchingMore(show);
+    }
+
+    @Override
+    public void noMorePaginatedData() {
+        mPhotosRV.removeOnScrollListener(mOnScrollListener);
+        showSnackError(getString(R.string.err_no_more_data));
+    }
+
+    @Override
+    public void showSnackError(String errorString) {
+        Snackbar.make(mPhotosRV, errorString, Snackbar.LENGTH_SHORT).show();
+    }
 
     @Override
     public void presentPhotos(List<FlickrPhotoBean> flickrPhotoBeanList) {
         mPhotosRV.setVisibility(View.VISIBLE);
+        int range = mFlickrPhotoBeanList.size();
         mFlickrPhotoBeanList.addAll(flickrPhotoBeanList);
-        mAdapter.notifyDataSetChanged();
+        mAdapter.notifyItemRangeChanged(range, flickrPhotoBeanList.size());
     }
 
     @Override

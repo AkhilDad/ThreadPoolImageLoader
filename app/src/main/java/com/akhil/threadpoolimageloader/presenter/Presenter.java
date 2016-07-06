@@ -40,4 +40,23 @@ public class Presenter {
         networkRequest.execute();
     }
 
+    public void fetchNextPhotos() {
+        mView.showFetchingMoreProgress(true);
+        final RequestBean requestBean = new RequestBean(FLICKR_PHOTO_URL +mResources.getString(R.string.api_key)+"&page="+(mFlickrResponse.getPage()+1));
+        NetworkRequest networkRequest = new NetworkRequest(requestBean, responseBean -> {
+            mView.showFetchingMoreProgress(false);
+            if ("ok".equalsIgnoreCase(responseBean.getStatus())) {
+                mFlickrResponse = responseBean.getResults();
+                if (mFlickrResponse != null) {
+                    mView.presentPhotos(mFlickrResponse.getPhotoBeanList());
+                    if (mFlickrResponse.getPage() >= mFlickrResponse.getPages()) {
+                        mView.noMorePaginatedData();
+                    }
+                }
+            } else {
+                mView.showSnackError(responseBean.getErrorString());
+            }
+        });
+        networkRequest.execute();
+    }
 }

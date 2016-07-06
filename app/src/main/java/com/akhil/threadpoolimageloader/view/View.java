@@ -11,4 +11,7 @@ public interface View {
     void presentPhotos(List<FlickrPhotoBean> flickrPhotoBeanList);
     void showProgress(boolean isShowProgress);
     void showError(String error);
+    void showFetchingMoreProgress(boolean show);
+    void noMorePaginatedData();
+    void showSnackError(String errorString);
 }
