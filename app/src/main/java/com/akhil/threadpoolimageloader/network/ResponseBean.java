@@ -8,8 +8,14 @@ import com.google.gson.annotations.SerializedName;
  */
 public class ResponseBean {
 
+    @SerializedName("code")
     private int mResponseCode;
+
+    @SerializedName("message")
     private String mErrorString;
+
+    @SerializedName("stat")
+    private String mStatus;
 
     @SerializedName("photos")
     private FlickrResponse mResults;
@@ -36,5 +42,13 @@ public class ResponseBean {
 
     public void setResults(FlickrResponse results) {
         mResults = results;
+    }
+
+    public String getStatus() {
+        return mStatus;
+    }
+
+    public void setStatus(String status) {
+        mStatus = status;
     }
 }

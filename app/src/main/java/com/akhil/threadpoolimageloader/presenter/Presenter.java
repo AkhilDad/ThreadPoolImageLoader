@@ -16,6 +16,7 @@ public class Presenter {
     public static final String FLICKR_PHOTO_URL = "https://api.flickr.com/services/rest/?method=flickr.photos.getRecent&format=json&extras=url_n&api_key=";
     private View mView;
     private Resources mResources;
+    private FlickrResponse mFlickrResponse;
 
     public Presenter(View view, Resources resources) {
         mView = view;
@@ -27,11 +28,16 @@ public class Presenter {
         final RequestBean requestBean = new RequestBean(FLICKR_PHOTO_URL +mResources.getString(R.string.api_key));
         NetworkRequest networkRequest = new NetworkRequest(requestBean, responseBean -> {
             mView.showProgress(false);
-            final FlickrResponse flickrResponse = responseBean.getResults();
-            if (flickrResponse != null) {
-                mView.presentPhotos(flickrResponse.getPhotoBeanList());
+            if ("ok".equalsIgnoreCase(responseBean.getStatus())) {
+                mFlickrResponse = responseBean.getResults();
+                if (mFlickrResponse != null) {
+                    mView.presentPhotos(mFlickrResponse.getPhotoBeanList());
+                }
+            } else {
+                mView.showError(responseBean.getErrorString());
             }
         });
         networkRequest.execute();
     }
+
 }
